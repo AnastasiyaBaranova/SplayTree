@@ -4,17 +4,17 @@ import java.util.Map;
 import java.util.Set;
 
 public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
-  private class Node {
+	private class Node {
 		public K key;
 		public V value;
 		public Node right = null;
 		public Node left = null;
-		public Node par;
+		public Node parent;
 
-		public Node(K key, V val, Node par) {
+		public Node(K key, V value, Node parent) {
 			this.key = key;
-			this.value = val;
-			this.par = par;
+			this.value = value;
+			this.parent = parent;
 		}
 
 		public K getKey() {
@@ -30,10 +30,10 @@ public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
 		if (entry == null)
 			return null;
 		K entryKey = entry.getKey();
-		int compareResult = key.compareTo(entryKey);
-		if (compareResult < 0)
+		int comparenteResult = key.compareTo(entryKey);
+		if (comparenteResult < 0)
 			return getEntry(entry.left, key);
-		if (compareResult > 0)
+		if (comparenteResult > 0)
 			return getEntry(entry.right, key);
 		return entry;
 	}
@@ -79,92 +79,100 @@ public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
 		return null;
 	}
 
-	private Node Zig(Node x, Node par) {
-		x.par = par.par;
-		if (par.left == x) {
-			par.left = x.right;
-			if (par.left != null)
-				par.left.par = par;
-			x.right = par;
+	private Node Zig(Node x, Node parent) {
+		x.parent = parent.parent;
+		if (parent.left == x) {
+			parent.left = x.right;
+			if (parent.left != null)
+				parent.left.parent = parent;
+			x.right = parent;
 			if (x.right != null)
-				x.right.par = x;
+				x.right.parent = x;
 		} else {
 
-			par.right = x.left;
-			if (par.right != null)
-				par.right.par = par;
-			x.left = par;
+			parent.right = x.left;
+			if (parent.right != null)
+				parent.right.parent = parent;
+			x.left = parent;
 			if (x.left != null)
-				x.left.par = x;
+				x.left.parent = x;
 
 		}
 		return x;
 	}
 
-	private Node ZigZig(Node x, Node par, Node gpar) {
-		par.par = gpar.par;
-		if (par == gpar.left) {
-			gpar.left = par.right;
-			if (gpar.left != null)
-				gpar.left.par = gpar;
-			par.right = gpar;
-			if (par.right != null)
-				par.right.par = par;
+	private Node ZigZig(Node x, Node parent, Node gpandParent) {
+		parent.parent = gpandParent.parent;
+		if (parent == gpandParent.left) {
+			gpandParent.left = parent.right;
+			if (gpandParent.left != null)
+				gpandParent.left.parent = gpandParent;
+			parent.right = gpandParent;
+			if (parent.right != null)
+				parent.right.parent = parent;
 
 		} else {
-			gpar.right = par.left;
-			if (gpar.right != null)
-				gpar.right.par = gpar;
-			par.left = gpar;
-			if (par.left != null)
-				par.left.par = par;
+			gpandParent.right = parent.left;
+			if (gpandParent.right != null)
+				gpandParent.right.parent = gpandParent;
+			parent.left = gpandParent;
+			if (parent.left != null)
+				parent.left.parent = parent;
 
 		}
-		return Zig(x, par);
+		return Zig(x, parent);
 	}
 
-	private Node ZigZag(Node x, Node par, Node gpar) {
-		if (par == gpar.left) {
-			gpar.left = Zig(x, par);
-			gpar.left.par = gpar;
+	private Node ZigZag(Node x, Node parent, Node gpandParent) {
+		if (parent == gpandParent.left) {
+			gpandParent.left = Zig(x, parent);
+			gpandParent.left.parent = gpandParent;
 
 		} else {
-			gpar.right = Zig(x, par);
-			gpar.right.par = gpar;
+			gpandParent.right = Zig(x, parent);
+			gpandParent.right.parent = gpandParent;
 
 		}
-		return Zig(x, gpar);
+		return Zig(x, gpandParent);
+	}
+
+	private boolean IsBothLeft(Node x, Node parent, Node grandParent) {
+		return x == parent.left && parent == grandParent.left;
+	}
+
+	private boolean IsBothRight(Node x, Node parent, Node grandParent) {
+		return x == parent.right && parent == grandParent.right;
 	}
 
 	private Node Splay(Node tree, Node x) {
-		Node bufPar = tree.par;
-		tree.par = null;
-		Node par = x.par;
-		Node gpar = par != null ? par.par : null;
-		Node insert = gpar != null ? gpar.par : null;
+		Node bufparent = tree.parent;
+		tree.parent = null;
+		Node parent = x.parent;
+		Node gpandParent = parent != null ? parent.parent : null;
+		Node insert = gpandParent != null ? gpandParent.parent : null;
 		Node splay;
-		if (par == null) {
-			tree.par = bufPar;
+		if (parent == null) {
+			tree.parent = bufparent;
 			return tree;
 		}
-		if (par == tree)
-			splay = Zig(x, par);
-		else if ((x == par.left && par == gpar.left)
-				|| (x == par.right && par == gpar.right))
-			splay = ZigZig(x, par, gpar);
+		if (parent == tree)
+			splay = Zig(x, parent);
+		else if (IsBothLeft(x, parent, gpandParent)
+				|| IsBothRight(x, parent, gpandParent))
+			splay = ZigZig(x, parent, gpandParent);
 		else
-			splay = ZigZag(x, par, gpar);
+			splay = ZigZag(x, parent, gpandParent);
 		if (insert == null) {
 			tree = splay;
 
 		} else {
-			if (insert.left == par || insert.left == gpar)
+			if (insert.left == parent || insert.left == gpandParent)
 				insert.left = splay;
 			else
 				insert.right = splay;
-			splay.par = insert;
+			splay.parent = insert;
 		}
-		tree.par = bufPar;
+		tree.parent = bufparent;
 		return tree;
 
 	}
@@ -182,9 +190,9 @@ public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
 
 	public V put(K key, V value) {
 		Node current = root;
-		Node insert = null;
+		Node insertion = null;
 		while (current != null) {
-			insert = current;
+			insertion = current;
 			int cmp = key.compareTo(current.key);
 			if (cmp == 0) {
 				current.value = value;
@@ -195,15 +203,15 @@ public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
 			else
 				current = current.right;
 		}
-		if (insert == null)
+		if (insertion == null)
 			root = new Node(key, value, null);
 		else {
-			int cmp = key.compareTo(insert.key);
-			Node x = new Node(key, value, insert);
+			int cmp = key.compareTo(insertion.key);
+			Node x = new Node(key, value, insertion);
 			if (cmp < 0)
-				insert.left = x;
+				insertion.left = x;
 			else
-				insert.right = x;
+				insertion.right = x;
 			root = Splay(root, x);
 		}
 
@@ -230,7 +238,7 @@ public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
 			return tree2;
 		tree1 = Splay(tree1, findMax(tree1));
 		tree1.right = tree2;
-		tree1.right.par = tree1;
+		tree1.right.parent = tree1;
 		return tree1;
 	}
 
@@ -243,13 +251,13 @@ public class TreeMap<K extends Comparable<K>, V> implements Map<K, V> {
 		if (x == root) {
 			root = m;
 		} else {
-			if (x == x.par.left)
-				x.par.left = m;
+			if (x == x.parent.left)
+				x.parent.left = m;
 			else
-				x.par.right = m;
+				x.parent.right = m;
 		}
 		if (m != null)
-			m.par = m.par.par;
+			m.parent = m.parent.parent;
 		size--;
 		return x.value;
 
